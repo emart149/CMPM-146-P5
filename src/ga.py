@@ -45,16 +45,16 @@ class Individual_Grid(object):
         # Default fitness function: Just some arbitrary combination of a few criteria.  Is it good?  Who knows?
         # STUDENT Modify this, and possibly add more metrics.  You can replace this with whatever code you like.
         coefficients = dict(
-            negativeSpace = 0.40,
+            negativeSpace = 0.30,
             pathPercentage = 0.2,
-            emptyPercentage = 0.60,
-            decorationPercentage = .01,
+            emptyPercentage = 0.50,
+            decorationPercentage = .05,
             leniency =3,
             meaningfulJumps = 8,
             jumps = 19,
             # meaningfulJumpVariance = ,
             # jumpVariance = ,
-            linearity = 0.4,
+            linearity = 0.5,
             solvability = 1
         )
         self._fitness = sum(map(lambda m: coefficients[m] * measurements[m],
@@ -123,55 +123,33 @@ class Individual_Grid(object):
             for x in range(left, right):
                 # STUDENT Which one should you take?  Self, or other?  Why?
                 # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
-                chosen_parent = random.choice((self,other))
+                if x %2 == 0:
+                    chosen_parent = self
+                else:
+                     chosen_parent = other
+                #chosen_parent = random.choice((self,other))
                 chosen_tile = chosen_parent.to_level()[y][x]
                 new_genome[y][x] = chosen_tile
 
-                # if y > 1 and new_genome[y - 1][x] == "|":
-                #     if self.to_level()[y - 1][x] == "|":
-                #         chosen_parent = self
-                #     else:
-                #         chosen_parent = other
-                #     new_genome[y][x] = chosen_tile
-
-                #if tile below is pipe, randomly chose if tile is pipe or end pip
-                if y < 15 and new_genome[y + 1][x] == "|":
-                    new_genome[y][x] = random.choice(("|","T"))
-                elif chosen_tile == "|" and new_genome[y + 1][x] != "X":
+                if y < 15 and new_genome[y][x] == "|" and new_genome[y + 1][x] != "X" and new_genome[y + 1][x] != "|":
                     new_genome[y][x] = "-"
 
-                #chosen tile can only be end pipe if there is pipe below
+                if y < 15 and (new_genome[y][x] != "T" and new_genome[y][x] != "|") and new_genome[y + 1][x] == "|":
+                    new_genome[y][x] = "T"
+
                 if y < 15 and chosen_tile == "T" and new_genome[y + 1][x] != "|":
                     new_genome[y][x] = "-"
-                #all tiles to the right of pipe and end pipe must be empty
-                if y < 15 and new_genome[y][x - 1]== "|":
-                    new_genome[y][x]== "-"
 
-                #if chosen tile is X then tile below must be X
-                if y < 15 and chosen_tile == "X" and new_genome[y + 1][x] != "X":
-                     new_genome[y][x] = "-"
-
-                #enemys can only spawn directly above X tiles
-                if y < 15 and chosen_tile == "E" and new_genome[y + 1][x] != "X":
+                #enemys can only spawn directly above X tiles or B TIles
+                if y < 15 and chosen_tile == "E" and new_genome[y + 1][x] != "X" and new_genome[y + 1][x] != "B":
                     new_genome[y][x] = "-"
 
-                #chosen tile can only be question box if bottom not blocked by solid block
-                if y < 15 and (chosen_tile == "?" or chosen_tile == "M") and (is_solid(new_genome[y + 1][x])):
-                    new_genome[y][x] = "-"
-
-                #chosen tile can only be question box if it is interactable 
-                if y < 12 and (chosen_tile == "?" or chosen_tile == "M") and not (is_solid(new_genome[y + 4][x -1]) or is_solid(new_genome[y + 4][x]) or is_solid(new_genome[y + 4][x + 1])):
-                    new_genome[y][x] = "-"
-
-                # if y >12 and (chosen_tile == "?" or chosen_tile == "M"):
-                #     new_genome[y][x] = "-"
-                #only spawn question mark block if there exists at least one solid type block y+4 below it and at x-1,x, or x+1
         #?????is 1 element tuple correct???? do mutation; note we're returning a one-element tuple here
-        print(f"len of genome: {len(new_genome)}")
-        arr1 = [1,2,3]
-        arr2 = [4,5,6]
-        arr3 = arr1 + arr2
-        print(f"arr test: {arr3}")
+        # print(f"len of genome: {len(new_genome)}")
+        # arr1 = [1,2,3]
+        # arr2 = [4,5,6]
+        # arr3 = arr1 + arr2
+        # print(f"arr test: {arr3}")
         return Individual_Grid(new_genome)
 
     # Turn the genome into a level string (easy for this genome)
@@ -196,12 +174,58 @@ class Individual_Grid(object):
     def random_individual(cls):
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
         # STUDENT also consider weighting the different tile types so it's not uniformly random
-        g = [random.choices(options, k=width) for row in range(height)]
+
+        # "-",  # an empty space
+        # "X",  # a solid wall
+        # "?",  # a question mark block with a coin
+        # "M",  # a question mark block with a mushroom
+        # "B",  # a breakable block
+        # "o",  # a coin
+        # "|",  # a pipe segment
+        # "T",  # a pipe top
+        # "E",  # an enemy
+        g = [random.choices(options, weights = [8,30,2,0.5,7,1,22,6,7], k=width) for row in range(height)]
+        left = 1
+        right = width - 1
+        for y in range(height,-1,-1):
+            for x in range(left, right):
+
+                #if tile is pipe, tile above must be pipe or end pip
+                if y < 15 and g[y][x] == "|" and g[y + 1][x] != "X" and g[y + 1][x] != "|":
+                   g[y][x] = "-"
+                # elif y < 15 and g[y][x] == "|":
+                #    g[y - 1][x] = random.choice(("|","T"))
+
+                #chosen tile can only be end pipe if there is pipe below
+                if y < 15 and g[y][x] == "T" and g[y + 1][x] != "|":
+                   g[y][x] = "-"
+                   
+                #all tiles to the right of pipe and end pipe must be empty
+                # if y < 15 and g[y][x - 1]== "|":
+                #    g[y][x]== "-"
+
+                #if chosen tile is X then tile below must be X
+                if y < 15 and  g[y][x] == "X" and g[y + 1][x] != "X":
+                    g[y][x] = "-"
+
+                #chosen tile can only be question box if bottom not blocked by solid block
+                if y < 14 and ( g[y][x] == "?" or  g[y][x] == "M") and (is_solid(g[y + 1][x]) and is_solid(g[y + 2][x])):
+                   g[y][x] = "-"
+
+                if y < 15 and y > 12 and ( g[y][x] == "?" or  g[y][x] == "M"):
+                   g[y][x] = "-"
+
+                #chosen tile can only be question box if it is interactable 
+                # if y < 12 and ( g[y][x] == "?" or  g[y][x] == "M") and not (is_solid(g[y + 4][x -1]) or is_solid(g[y + 4][x]) or is_solid(g[y + 4][x + 1])):
+                #    g[y][x] = "-"
+
+        #for y in range(height)
         g[15][:] = ["X"] * width
         g[14][0] = "m"
         g[7][-1] = "v"
         g[8:14][-1] = ["f"] * 6
         g[14:16][-1] = ["X", "X"]
+        
         return cls(g)
 
 def is_solid(genome):
