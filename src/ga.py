@@ -78,38 +78,33 @@ class Individual_Grid(object):
         for y in range(height-1,-1,-1):
             for x in range(left, right):
                 chosen_tile = random.choice(options)
-                genome[y][x] = chosen_tile
+                #genome[y][x] = chosen_tile
 
                 #if tile below is pipe, randomly chose if tile is pipe or end pip
-                if y < 15 and genome[y + 1][x] == "|":
-                    genome[y][x] = random.choice(("|","T"))
-                elif chosen_tile == "|" and genome[y + 1][x] != "X":
-                    genome[y][x] = "-"
+                while y < 15 and chosen_tile == "|" and genome[y + 1][x] != "X" and genome[y + 1][x] != "|":
+                    chosen_tile = random.choice(options)
 
                 #chosen tile can only be end pipe if there is pipe below
-                if y < 15 and chosen_tile == "T" and genome[y + 1][x] != "|":
-                    genome[y][x] = "-"
-
-                #all tiles to the right of pipe and end pipe must be empty
-                # if y < 15 and genome[y][x - 1]== "|":
-                #     genome[y][x]== "-"
+                while y < 15 and chosen_tile == "T" and genome[y + 1][x] != "|":
+                    chosen_tile = random.choice(options)
 
                 #if chosen tile is X then tile below must be X
-                if y < 15 and chosen_tile == "X" and genome[y + 1][x] != "X":
-                     genome[y][x] = "-"
+                while y < 15 and chosen_tile == "X" and genome[y + 1][x] != "X":
+                     chosen_tile = random.choice(options)
 
-                #enemys can only spawn directly above X tiles
-                if y < 15 and chosen_tile == "E" and genome[y + 1][x] != "X":
-                    genome[y][x] = "-"
+                #enemys can only spawn directly above X  or B tiles
+                while y < 15 and chosen_tile == "E" and genome[y + 1][x] != "B":
+                    chosen_tile = random.choice(options)
 
                 #chosen tile can only be question box if bottom not blocked by solid block
-                if y < 15 and (chosen_tile == "?" or chosen_tile == "M") and (is_solid(genome[y + 1][x])):
-                    genome[y][x] = "-"
+                while y < 14 and (chosen_tile == "?" or chosen_tile == "M") and (is_solid(genome[y + 1][x]) or is_solid(genome[y + 2][x])):
+                    chosen_tile = random.choice(options)
 
                 #chosen tile can only be question box if it is interactable 
-                if y < 12 and (chosen_tile == "?" or chosen_tile == "M") and not (is_solid(genome[y + 4][x -1]) or is_solid(genome[y + 4][x]) or is_solid(genome[y + 4][x + 1])):
-                    genome[y][x] = "-"
+                while y < 12 and (chosen_tile == "?" or chosen_tile == "M") and not (is_solid(genome[y + 4][x -1]) or is_solid(genome[y + 4][x]) or is_solid(genome[y + 4][x + 1])):
+                    chosen_tile = random.choice(options)
 
+                genome[y][x] = chosen_tile
         return genome
                     
     # Create zero or more children from self and other
@@ -131,6 +126,7 @@ class Individual_Grid(object):
                 chosen_tile = chosen_parent.to_level()[y][x]
                 new_genome[y][x] = chosen_tile
 
+                #if tile below is pipe, randomly chose if tile is pipe or end pip
                 if y < 15 and new_genome[y][x] == "|" and new_genome[y + 1][x] != "X" and new_genome[y + 1][x] != "|":
                     new_genome[y][x] = "-"
 
@@ -150,6 +146,8 @@ class Individual_Grid(object):
         # arr2 = [4,5,6]
         # arr3 = arr1 + arr2
         # print(f"arr test: {arr3}")
+        if random.random() < .50:
+            return Individual_Grid(self.mutate(new_genome))
         return Individual_Grid(new_genome)
 
     # Turn the genome into a level string (easy for this genome)
@@ -209,7 +207,7 @@ class Individual_Grid(object):
                     g[y][x] = "-"
 
                 #chosen tile can only be question box if bottom not blocked by solid block
-                if y < 14 and ( g[y][x] == "?" or  g[y][x] == "M") and (is_solid(g[y + 1][x]) and is_solid(g[y + 2][x])):
+                if y < 14 and ( g[y][x] == "?" or  g[y][x] == "M") and (is_solid(g[y + 1][x]) or is_solid(g[y + 2][x])):
                    g[y][x] = "-"
 
                 if y < 15 and y > 12 and ( g[y][x] == "?" or  g[y][x] == "M"):
