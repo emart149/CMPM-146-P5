@@ -77,7 +77,7 @@ class Individual_Grid(object):
         right = width - 1
         for y in range(height-1,-1,-1):
             for x in range(left, right):
-                chosen_tile = random.choice(options)
+                chosen_tile = random.choices(options, weights = [8,30,2,0.5,7,1,22,6,7], k=1)[0]
                 #genome[y][x] = chosen_tile
 
                 #if tile below is pipe, randomly chose if tile is pipe or end pip
@@ -146,7 +146,7 @@ class Individual_Grid(object):
         # arr2 = [4,5,6]
         # arr3 = arr1 + arr2
         # print(f"arr test: {arr3}")
-        if random.random() < .50:
+        if random.random() < .70:
             return Individual_Grid(self.mutate(new_genome))
         return Individual_Grid(new_genome)
 
@@ -291,7 +291,7 @@ class Individual_DE(object):
         return self._fitness
 
     def mutate(self, new_genome):
-        #ELIJAH Note: I'm pretty sure a row is passed into new_genome
+        #ELIJAH Note: set of rows passed in as new_genome, but it's possible to not equal 16 total rows???
         # STUDENT How does this work?  Explain it in your writeup.
         # STUDENT consider putting more constraints on this, to prevent generating weird things
         if random.random() < 0.1 and len(new_genome) > 0:
@@ -373,8 +373,23 @@ class Individual_DE(object):
 
     def generate_children(self, other):
         # STUDENT How does this work?  Explain it in your writeup.
-        pa = random.randint(0, len(self.genome) - 1)
-        pb = random.randint(0, len(other.genome) - 1)
+        """
+        Basically how it works is pa and pb is a random row for either self's or other's genome
+        a_part returns all self's rows before row pa
+        b_part returns all other's from row pb onwards
+        ga = all of self's rows before row pa + all of other's rows from pb onwards
+
+        b_part returns all of other's rows before row pb
+        a_part returns all self's rows from row pa onwards
+        gb = all of other's rows before row pb + all self's rows from row pa onwards
+
+        returns two children: one with a mutated ga genome and the other with a mutated gb genome
+        """
+        print(f"GENOME LEN: {len(self.genome)}")
+        if len(self.genome) > 0:
+            pa = random.randint(0, len(self.genome) - 1)
+        if len(other.genome) > 0:
+            pb = random.randint(0, len(other.genome) - 1)
         a_part = self.genome[:pa] if len(self.genome) > 0 else []
         b_part = other.genome[pb:] if len(other.genome) > 0 else []
         ga = a_part + b_part
@@ -452,7 +467,7 @@ class Individual_DE(object):
         return Individual_DE(g)
 
 
-Individual = Individual_Grid
+Individual = Individual_DE
 
 
 def generate_successors(population):
@@ -479,7 +494,12 @@ def generate_successors(population):
         while parent1 == parent2:
             parent1 = random.choice(parents)
             parent2 = random.choice(parents)
-        results.append(parent1.generate_children(parent2))
+        child = parent1.generate_children(parent2)
+        if isinstance(child,tuple):
+            for every in child:
+                results.append(every)
+        else:
+            results.append(child)
     # for every in parents:
     #     print(f"parent list: {every}")
     #print(f"len of pop: {len(parents)}")
