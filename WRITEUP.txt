@@ -1,0 +1,72 @@
+Individual_GRID:
+
+
+Fitness Function:
+My goal for the fitness for individual_GRID was to make the level seem less random while still having a multitide of heights so that the player can jump to solid 
+blocks or pipes with different ranges. One of the issues was the overabundance of coins and question mark boxes so I had to decrease decorations signifcantly. Furthermore,
+I also did not want the level to be too difficult so I made the leniencry extremel high to prevent unecessary fustrations. In addition, made the negative and empty space
+percentages higher to tame the overadbundance of mid air blocks. 
+
+Mutation Operator & Rate - 
+The way that I implemented the mutation operator makes it so that every tile is randomly switched to a different type of tile within 
+the constraints I set. Furthermore, each individual tile mutation is not completely random due to weight also being used, significantly giving preference to "X" tiles
+and pipes. Throughout many rounds of testing, these set of weights frequently outputted results I liked since the increase in solid blocks and pipes encouraged more
+vertical variety within the levels. Additionally, I made coins and mushroom blocks especially low weights so I believe that the value of these items is in their rarity. 
+The constraints I implemented forces pipes to only spawn on top of other pipes or solid blocks, "T" blocks can only spawn on top of pipes, enemies can only spawn on
+top of solid or breakable blocks, and a question mark box can only spawn if a solid block is not blocking it below, and more. The mutation rate I chose, was 40% since
+I found this rate to be a perfect balance of adding variety while not overbloating the levels. Especially if I made the rate over 50%, I typically found the last level
+after every 5th generation to be overfilled with too many tiles, while if I used 30% or less, the genetic algorithm would settle way too fast. 
+
+generate_children operator - 
+The type of crossover that I chose to implement was multi-point crossover that returns 1 child. The way my multi-point crossover functions
+is that for every even column it takes from self parent genome, while the odd columns take from the other parent genome. The reason why I implemented multi-point
+crossover this way is to further encourage vertical variety. I found that with alternating between genomes for each row, the pipes would frequently get cut off,
+so I chose to alternate with each column so that taller pipes/solid block walls have a higher chance of appearing. 
+
+
+
+generate_successors operator: 
+The two selection strategies that I chose were two variations of the truncation selection technique. Essentially, during the first n
+generations of the algorithm, the parents are the top of 50% genomes with the highest fitness within the population. For the second selection strategy I implemented,
+after n generations 1 parent is chosen from the top 50% of highest fitness genomes while parent 2 is chose from the lowest 50% of the population. I chose this strategy
+to also encourage diversity and to prevent the algorithm from settling too early. 
+
+
+
+Individual DE:
+
+Fitness Function:
+Funny enough the changes I made to the fitness function for Individual DE were to tame the pipes and make them not as prevalent/tall. In individual Grid I strongly aimed
+for vertical variance, but in Individual DE vertical variance seemed quicker to abtain and overabundant most of the time. So in an effort to make the pipes shorter and
+appear less frequently I signifcantly inreased the linearty, empty space, and negative space properties while decresing the decorations and meaningful jumps properties
+to try to discourage a design with a lot of jumping. This seemed to work the majority of the time, although, the secoond selection technique can cause the fitness to not
+always work as intended
+
+Initial Mutation Operator: 
+        Essentially how mutate works is there is a 10% chance for the function to chose a random element within
+        the geneome. Then for each corresponding type of block except enemeies, there are unique mutations for each block which have an equal chance of occuring. 
+        - for the block element there is a 33% chance for the x location to increase, 33% chance for the y location to increase, and 33% for the block's breakable property to be inverted
+        - for the question mark block element there is a 33% chance for the x location to increase, 33% chance for the y location to increase, and 33% for the block's powerup property to be inverted
+        - for the coin elment there is a 50% chance for the x location to increase, 50% chance for the y location to increase
+        - for the pipe element there is a 50% chance for the x location to incraese, 50% chance for the height of the pipe to increase
+        - for the hole element there is a 50% chance for the x location to increase, 50% chance for the width of the hole to increase
+        - for the stairs element there is a 33% chance for the x location to increase, 33% chance for the hieght to increase, and 33% for the stairs dierction to be inverted
+        - for the platform  element there is a 25% chance for the x location to increase,25% chance for the width to increase, 25% chance for the y location to increase, and 25% for the platform's block type to be switched
+        Then the old element is popped from the genome passed in and the new element is added using heappush
+
+generate children Operator:
+Basically how it works is pa and pb is a random index for either self's or other's genome. a_part returns all self's elements before element pa, b_part returns all of other's 
+elements from element pb onwards. Then ga is all of self's elements before element pa + all of other's elements from pb onwards. Next, b_part returns all of other's 
+elements before element pb and a_part returns all self's elements from element pa onwards. Lastly, gb is all of other's elements before element pb + all self's elements 
+from element pa onwards and the operator returns two children: one with a mutated ga genome and the other with a mutated gb genome.
+
+My changes to the mutation operator: 
+For my version of the mutation operator, I decided to completely re-select new design elements if the chosen design element
+corresponded to a coin, question mark block, or pipe. I made this change for specific design elements in which were mutations felt insignifcant such as just changing x and y 
+coordiantes. So for instance, rather than than changing the x and y coordinates for the coin, I randomize the block again but keep the same x and y coordinates. I chose
+this method since I feel like it adds more variety to the genomes rather than just shifting coordinates. 
+
+Chosen Level:
+This is my favorite chosen level from Individual_Grid since I think that it offers the most variety while also still having comprehendable level design. More specifically,
+I like how their are multiple pipes with variable heights and not too many reward blocks such as coins and mystery boxes. Although there are too many breakable blocks
+this is my closest version what I consider a "perfect level" since the dispersion of mid air breakable blocks encourage complex platforming. 

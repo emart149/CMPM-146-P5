@@ -49,7 +49,7 @@ class Individual_Grid(object):
             pathPercentage = 0.2,
             emptyPercentage = 0.50,
             decorationPercentage = .05,
-            leniency =3,
+            leniency =50,
             meaningfulJumps = 8,
             jumps = 19,
             # meaningfulJumpVariance = ,
@@ -77,33 +77,65 @@ class Individual_Grid(object):
         right = width - 1
         for y in range(height-1,-1,-1):
             for x in range(left, right):
-                chosen_tile = random.choices(options, weights = [8,30,2,0.5,7,1,22,6,7], k=1)[0]
+                chosen_tile = random.choices(options, weights = [10,30,2,0.5,5,1,22,6,5], k=1)[0]
                 #genome[y][x] = chosen_tile
+                done_choosing = False
 
                 #if tile below is pipe, randomly chose if tile is pipe or end pip
                 while y < 15 and chosen_tile == "|" and genome[y + 1][x] != "X" and genome[y + 1][x] != "|":
                     chosen_tile = random.choice(options)
+                    done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
 
                 #chosen tile can only be end pipe if there is pipe below
                 while y < 15 and chosen_tile == "T" and genome[y + 1][x] != "|":
                     chosen_tile = random.choice(options)
-
-                #if chosen tile is X then tile below must be X
-                while y < 15 and chosen_tile == "X" and genome[y + 1][x] != "X":
-                     chosen_tile = random.choice(options)
+                    done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
 
                 #enemys can only spawn directly above X  or B tiles
-                while y < 15 and chosen_tile == "E" and genome[y + 1][x] != "B":
+                while y < 15 and chosen_tile == "E" and genome[y + 1][x] != "B" and genome[y + 1][x] != "X":
                     chosen_tile = random.choice(options)
+                    done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
 
                 #chosen tile can only be question box if bottom not blocked by solid block
                 while y < 14 and (chosen_tile == "?" or chosen_tile == "M") and (is_solid(genome[y + 1][x]) or is_solid(genome[y + 2][x])):
-                    chosen_tile = random.choice(options)
+                   chosen_tile = random.choice(options)
+                done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
 
                 #chosen tile can only be question box if it is interactable 
                 while y < 12 and (chosen_tile == "?" or chosen_tile == "M") and not (is_solid(genome[y + 4][x -1]) or is_solid(genome[y + 4][x]) or is_solid(genome[y + 4][x + 1])):
                     chosen_tile = random.choice(options)
+                    done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
 
+                #Floor tile mus tbe X or -
+                while y == 15 and (chosen_tile != "X" and chosen_tile != "-"):
+                    chosen_tile = random.choice(options)
+                    done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
+
+                #if chosen tile is X then tile below must be X
+                while y < 15 and chosen_tile == "X" and genome[y + 1][x] != "X":
+                    chosen_tile = random.choice(options)
+                    done_choosing = True
+                if done_choosing == True:
+                    genome[y][x] = chosen_tile
+                    break
                 genome[y][x] = chosen_tile
         return genome
                     
@@ -140,14 +172,10 @@ class Individual_Grid(object):
                 if y < 15 and chosen_tile == "E" and new_genome[y + 1][x] != "X" and new_genome[y + 1][x] != "B":
                     new_genome[y][x] = "-"
 
-        #?????is 1 element tuple correct???? do mutation; note we're returning a one-element tuple here
-        # print(f"len of genome: {len(new_genome)}")
-        # arr1 = [1,2,3]
-        # arr2 = [4,5,6]
-        # arr3 = arr1 + arr2
-        # print(f"arr test: {arr3}")
-        if random.random() < .70:
+        #mutation
+        if random.random() < .40:
             return Individual_Grid(self.mutate(new_genome))
+        
         return Individual_Grid(new_genome)
 
     # Turn the genome into a level string (easy for this genome)
@@ -254,7 +282,16 @@ def clip(lo, val, hi):
 class Individual_DE(object):
     # Calculating the level isn't cheap either so we cache it too.
     __slots__ = ["genome", "_fitness", "_level"]
-
+    legal_elements = [
+            (random.randint(1, width - 2), "0_hole", random.randint(1, 8)),
+            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, height - 1), random.choice(["?", "X", "B"])),
+            (random.randint(1, width - 2), "2_enemy"),
+            (random.randint(1, width - 2), "3_coin", random.randint(0, height - 1)),
+            (random.randint(1, width - 2), "4_block", random.randint(0, height - 1), random.choice([True, False])),
+            (random.randint(1, width - 2), "5_qblock", random.randint(0, height - 1), random.choice([True, False])),
+            (random.randint(1, width - 2), "6_stairs", random.randint(1, height - 4), random.choice([-1, 1])),
+            (random.randint(1, width - 2), "7_pipe", random.randint(2, height - 4))
+        ]
     # Genome is a heapq of design elements sorted by X, then type, then other parameters
     def __init__(self, genome):
         self.genome = list(genome)
@@ -269,12 +306,18 @@ class Individual_DE(object):
         # STUDENT Add more metrics?
         # STUDENT Improve this with any code you like
         coefficients = dict(
-            meaningfulJumpVariance=0.5,
-            negativeSpace=0.6,
-            pathPercentage=0.5,
-            emptyPercentage=0.6,
-            linearity=-0.5,
-            solvability=2.0
+
+            negativeSpace = 0.80,
+            pathPercentage = 0.20,
+            emptyPercentage = 0.95,
+            decorationPercentage = .40,
+            leniency = 10,
+            meaningfulJumps = 7,
+            jumps = 15,
+            #meaningfulJumpVariance = 10,
+            jumpVariance = 5,
+            linearity = 25,
+            solvability = 1
         )
         penalties = 0
         # STUDENT For example, too many stairs are unaesthetic.  Let's penalize that
@@ -290,17 +333,57 @@ class Individual_DE(object):
             self.calculate_fitness()
         return self._fitness
 
+    def change_random_element(self,x,y):
+        if y == -1:
+            set_Y = random.randint(0, height - 1)
+        else:
+            set_Y = y
+        new_el = random.choice([
+            (x, "0_hole", random.randint(1, 8)),
+            (x, "1_platform", random.randint(1, 8), set_Y, random.choice(["?", "X", "B"])),
+            (x, "2_enemy"),
+            (x, "3_coin", set_Y),
+            (x, "4_block", set_Y, random.choice([True, False])),
+            (x, "5_qblock", set_Y, random.choice([True, False])),
+            (x, "6_stairs", random.randint(1, height - 4), random.choice([-1, 1])),
+            (x, "7_pipe", random.randint(2, height - 10))
+        ])
+        return new_el
+    
     def mutate(self, new_genome):
-        #ELIJAH Note: set of rows passed in as new_genome, but it's possible to not equal 16 total rows???
+        #ELIJAH Note: set of elements passed in as new_genome
         # STUDENT How does this work?  Explain it in your writeup.
         # STUDENT consider putting more constraints on this, to prevent generating weird things
-        if random.random() < 0.1 and len(new_genome) > 0:
+        """
+        Essentially how mutate works is there is a 10% chance for the function to chose a random element within
+        the geneome.
+        Then for each type of block except enemeies, there is a range of different changes that can be made.
+        - for the block element there is a 33% chance for the x location to increase, 33% chance for the y location to increase, and 33% for the block's breakable property to be inverted
+        - Changefor the question mark block element there is a 33% chance for the x location to increase, 33% chance for the y location to increase, and 33% for the block's powerup property to be inverted
+        - Change: for the coin element there is a 50% chance for the x location to increase, 50% chance for the y location to increase
+        - Change: for the pipe element there is a 50% chance for the x location to increase, 50% chance for the height of the pipe to increase
+        - for the hole element there is a 50% chance for the x location to increase, 50% chance for the width of the hole to increase
+        - for the stairs element there is a 33% chance for the x location to increase, 33% chance for the hieght to increase, and 33% for the stairs direction to be inverted
+        - for the platform  element there is a 25% chance for the x location to increase,25% chance for the width to increase, 25% chance for the y location to increase, and 25% for the platform's block type to be switched
+        Then the old element is popped from the genome passed in and the new element is added using heappush
+        """
+        if random.random() < 0.30 and len(new_genome) > 0:
             to_change = random.randint(0, len(new_genome) - 1)
             de = new_genome[to_change]
             new_de = de
             x = de[0]
             de_type = de[1]
             choice = random.random()
+            new_el = random.choice([
+            (random.randint(1, width - 2), "0_hole", random.randint(1, 8)),
+            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, height - 1), random.choice(["?", "X", "B"])),
+            (random.randint(1, width - 2), "2_enemy"),
+            (random.randint(1, width - 2), "3_coin", random.randint(0, height - 1)),
+            (random.randint(1, width - 2), "4_block", random.randint(0, height - 1), random.choice([True, False])),
+            (random.randint(1, width - 2), "5_qblock", random.randint(0, height - 1), random.choice([True, False])),
+            (random.randint(1, width - 2), "6_stairs", random.randint(1, height - 4), random.choice([-1, 1])),
+            (random.randint(1, width - 2), "7_pipe", random.randint(2, height - 4))
+        ])[1]
             if de_type == "4_block":
                 y = de[2]
                 breakable = de[3]
@@ -320,21 +403,21 @@ class Individual_DE(object):
                     y = offset_by_upto(y, height / 2, min=0, max=height - 1)
                 else:
                     has_powerup = not de[3]
-                new_de = (x, de_type, y, has_powerup)
+                new_de = self.change_random_element(x,y)
             elif de_type == "3_coin":
                 y = de[2]
                 if choice < 0.5:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 else:
                     y = offset_by_upto(y, height / 2, min=0, max=height - 1)
-                new_de = (x, de_type, y)
+                new_de = self.change_random_element(x,y)
             elif de_type == "7_pipe":
                 h = de[2]
                 if choice < 0.5:
                     x = offset_by_upto(x, width / 8, min=1, max=width - 2)
                 else:
-                    h = offset_by_upto(h, 2, min=2, max=height - 4)
-                new_de = (x, de_type, h)
+                    h = offset_by_upto(h, 2, min=2, max=height - 10)
+                new_de = self.change_random_element(x,-1)
             elif de_type == "0_hole":
                 w = de[2]
                 if choice < 0.5:
@@ -373,19 +456,7 @@ class Individual_DE(object):
 
     def generate_children(self, other):
         # STUDENT How does this work?  Explain it in your writeup.
-        """
-        Basically how it works is pa and pb is a random row for either self's or other's genome
-        a_part returns all self's rows before row pa
-        b_part returns all other's from row pb onwards
-        ga = all of self's rows before row pa + all of other's rows from pb onwards
-
-        b_part returns all of other's rows before row pb
-        a_part returns all self's rows from row pa onwards
-        gb = all of other's rows before row pb + all self's rows from row pa onwards
-
-        returns two children: one with a mutated ga genome and the other with a mutated gb genome
-        """
-        print(f"GENOME LEN: {len(self.genome)}")
+        
         if len(self.genome) > 0:
             pa = random.randint(0, len(self.genome) - 1)
         if len(other.genome) > 0:
@@ -467,61 +538,53 @@ class Individual_DE(object):
         return Individual_DE(g)
 
 
-Individual = Individual_DE
+Individual = Individual_Grid
 
 
-def generate_successors(population):
+def generate_successors(population, generation):
     results = []
     population_copy = []
-    parents = []
-
+    fit_parents = []
+    less_fit_parents = []
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
     for every in population:
         population_copy.append(every)
 
-    num_parents = 0.25 * len(population)
-    while len(parents) < num_parents:
+    num_parents = 0.50 * len(population)
+    while len(fit_parents) < num_parents:
         #parent1 = max(population)
         highest_fitness = max(population_copy, key = lambda individual: individual.fitness())
         population_copy.remove(highest_fitness)
         
-        parents.append(highest_fitness)
+        fit_parents.append(highest_fitness)
+
+    #print(f"len of pop copy: {len(population_copy)}")
 
     while len(results) < len(population):
-        parent1 = random.choice(parents)
-        parent2 = random.choice(parents)
-        while parent1 == parent2:
-            parent1 = random.choice(parents)
-            parent2 = random.choice(parents)
+        parent1 = random.choice(fit_parents)
+
+        if generation < 5:
+            parent2 = random.choice(fit_parents)
+            while parent1 == parent2:
+                parent2 = random.choice(fit_parents)
+        else: 
+            parent2 = random.choice(population_copy)
+
         child = parent1.generate_children(parent2)
+
         if isinstance(child,tuple):
             for every in child:
                 results.append(every)
         else:
             results.append(child)
-    # for every in parents:
-    #     print(f"parent list: {every}")
-    #print(f"len of pop: {len(parents)}")
-
-    # while len(parents) > 1:
-    #     highest_fitness = max(parents, key = lambda individual: individual.fitness())
-    #     parents.remove(highest_fitness)
-    #     parent1 = highest_fitness
-    #     highest_fitness2 = max(parents, key = lambda individual: individual.fitness())
-    #     parents.remove(highest_fitness2)
-    #     parent2 = highest_fitness2
-    #     results.append(parent1.generate_children(parent2))
-    #     print(f"parent list: {parents}")
-
     
-    #print(f"Results len: {len(results)}")
     return results
 
 
 def ga():
     # STUDENT Feel free to play with this parameter
-    pop_limit = 100
+    pop_limit = 480
     # Code to parallelize some computations
     batches = os.cpu_count()
     if pop_limit % batches != 0:
@@ -565,7 +628,7 @@ def ga():
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
                 gentime = time.time()
-                next_population = generate_successors(population)
+                next_population = generate_successors(population, generation)
                 gendone = time.time()
                 print("Generated successors in:", gendone - gentime, "seconds")
                 # Calculate fitness in batches in parallel
